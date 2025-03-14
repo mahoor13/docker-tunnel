@@ -9,10 +9,25 @@ Base on https://github.com/go-gost/gost⁠
 docker buildx build . -t gost-ssh-tunnel
 ```
 
-### Create RSA keys
+### Create the RSA keys
 
 ```
 mkdir ./.ssh ; ssh-keygen -t rsa -b 4096 -f ./.ssh/id_rsa ; cat ./.ssh/id_rsa.pub
+```
+
+### Create the SSH Config (10.10.10.10 is the server IP. Replace it with your desired IP.)
+
+```
+cat <<EOF > ./.ssh/config
+Host 10.10.10.10
+    HostName 10.10.10.10
+    StrictHostKeyChecking accept-new
+    HashKnownHosts yes
+    User <SET USERNAME HERE>
+    PreferredAuthentications publickey
+    IdentityFile /root/.ssh/id_rsa
+    ServerAliveInterval 30
+EOF
 ```
 
 - **Add id_rsa.pub content to the end of server authorized_keys file (~/.ssh/authorized_keys)**
@@ -84,4 +99,9 @@ WantedBy=multi-user.target
 ```
 sudo systemctl daemon-reload
 sudo systemctl enable --now gost
+```
+
+### Test the proxy tunnel
+```
+curl --proxy 127.0.0.1:8080 api.myip.com
 ```
