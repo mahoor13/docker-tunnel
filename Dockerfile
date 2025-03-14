@@ -1,18 +1,21 @@
 FROM gogost/gost
 
+COPY ./supervisord.conf /etc/supervisord.conf
+COPY ./entrypoint.sh /entrypoint.sh
+
 # Install openssh-client and then clean up
 RUN apk update && \
-    apk add --no-cache openssh-client supervisor && \
-    # Clean up the apk cache to reduce image size
+    apk add --no-cache openssh-client curl && \
     rm -rf /var/cache/apk/* && \
     mkdir -p /root/.ssh && \
-    chmod 700 /root/.ssh
+    chmod 700 /root/.ssh && \
+    chmod a+x /entrypoint.sh 
 
-# Set up SSH configuration for better security
-RUN echo "Host *\n\tStrictHostKeyChecking accept-new\n\tHashKnownHosts yes" > /root/.ssh/config && \
-    chmod 600 /root/.ssh/config
+# golang alternative for supervisord
+COPY --from=ochinchina/supervisord:latest /usr/local/bin/supervisord /usr/local/bin/supervisord
 
-RUN mkdir -p /etc/supervisor/conf.d
-COPY ./supervisord.conf /etc/supervisord.conf
+COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD ["/usr/local/bin/supervisord"]
